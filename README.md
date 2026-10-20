@@ -8,15 +8,11 @@ GitHub Actions diagnostics, expression completions, and quick fixes from
 - A current Zed release supporting extension API 0.7.0.
 - Zed's [GitHub Actions extension](https://zed.dev/extensions/github-actions),
   which defines the **GitHub Actions** language and syntax highlighting.
-- An actionlint build that supports `actionlint lsp`. Verify with
-  `actionlint lsp --help`. As of October 20, 2026, the latest published release,
-  v1.17.0, lacks LSP support. Build the current `kjanat/actionlint` source;
-  `rhysd/actionlint` does not provide this server.
 - For installing this extension from source: Rust installed through
   [rustup](https://rustup.rs). Check `rustup --version`.
 
-The extension uses an existing actionlint installation. It does not download
-release assets while the published binaries lack LSP support.
+The extension downloads actionlint using Zed's GitHub release API. An existing
+LSP-capable installation on `PATH` takes precedence.
 
 ## Install
 
@@ -51,25 +47,30 @@ to arbitrary YAML would produce unrelated diagnostics.
 
 ## Choose the binary
 
-By default, the extension finds `actionlint` on the project's shell `PATH`,
-checks `actionlint lsp --help`, and launches `actionlint lsp`.
+By default, the extension checks `actionlint` on the project's shell `PATH`.
+If it is missing or does not support LSP, the extension fetches the latest stable
+release from [`kjanat/actionlint`](https://github.com/kjanat/actionlint/releases)
+through Zed's `latest_github_release` and `download_file` APIs. It selects the
+native Windows ZIP or macOS/Linux tarball, extracts it into a versioned cache,
+checks LSP support, and launches `actionlint lsp`.
+
+The first managed launch after the extension loads checks GitHub for updates.
+Successful downloads are reused for subsequent starts in the same extension
+session. Reload the extension or restart Zed to check again. An existing archive's
+executable is reused from disk when the selected release has not changed.
+Older version directories remain intact so updates do not replace running servers.
+
 Shell environment variables remain available to actionlint and optional tools
 such as ShellCheck and Ruff.
 
-Build from the actionlint source checkout with its required Go toolchain:
-
-```sh
-go build -o actionlint-lsp.exe ./cmd/actionlint
-```
-
-Then select that binary:
+To override automatic installation with your own executable:
 
 ```json
 {
   "lsp": {
     "actionlint": {
       "binary": {
-        "path": "C:\\Users\\kjanat\\Projects\\actionlint\\actionlint-lsp.exe",
+        "path": "C:\\tools\\actionlint.exe",
         "arguments": ["lsp"]
       }
     }
@@ -77,8 +78,7 @@ Then select that binary:
 }
 ```
 
-On macOS or Linux, build with `-o actionlint-lsp` and use an absolute executable
-path such as `/home/me/projects/actionlint/actionlint-lsp`.
+On macOS or Linux, use an absolute executable path such as `/usr/local/bin/actionlint`.
 
 **Include `arguments: ["lsp"]` when setting `path`.** Zed can launch explicit
 binary paths directly, bypassing the extension's default arguments and
@@ -122,5 +122,5 @@ confirm a diagnostic, correct the job name without saving, and confirm the
 diagnostic clears. Check expression completions after `${{ github.`. Opening an
 unrelated YAML file must not start actionlint for that language.
 
-The manifest grants only the subprocess arguments `lsp --help` for the
-compatibility probe. It requests no download or npm-install capability.
+The manifest limits downloads to `kjanat/actionlint` release assets on GitHub,
+and subprocess probes to the arguments `lsp --help`.

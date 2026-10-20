@@ -13,8 +13,13 @@ languages = ["GitHub Actions"]
 [language_servers.actionlint.language_ids]
 "GitHub Actions" = "yaml"
 
-# Probe user-selected executable paths without granting arbitrary arguments.
+# Check local and downloaded binaries for LSP support.
 [[capabilities]]
 kind    = "process:exec"
 command = "*"
 args    = ["lsp", "--help"]
+
+[[capabilities]]
+kind = "download_file"
+host = "github.com"
+path = ["kjanat", "actionlint", "releases", "download", "**"]
