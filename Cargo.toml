@@ -1,0 +1,14 @@
+[package]
+name        = "zed-actionlint"
+version     = "0.1.0"
+edition     = "2024"
+description = "actionlint language server support for Zed"
+repository  = "https://github.com/kjanat/zed-actionlint"
+license     = "MIT"
+publish     = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+zed_extension_api = "0.7"
